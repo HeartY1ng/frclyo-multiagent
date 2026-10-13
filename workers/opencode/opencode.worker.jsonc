@@ -1,0 +1,74 @@
+// opencode.worker.jsonc —— OpenCode 当执行者时用的配置（只在这个项目里，不碰 ~/.config/opencode）
+//
+// 由 ../../bin/opencode-worker.sh 通过 OPENCODE_CONFIG 环境变量加载。
+// 权限模板保留现有防护；入口按公共配置限定本轮提供方和 API 主机。
+//   - 默认模板保留三家模型白名单：DeepSeek、Kimi（Moonshot 开放平台国内版）、小米 MiMo。
+//     其余提供方（含 anthropic、openai、github-copilot、opencode 免费模型）一律不加载。
+//   - key 只用 {env:变量名} 引用，由执行脚本每次只注入一把，配置文件里不出现任何 key。
+//   - 权限里不能留任何 "ask"：无人值守的 run 模式会自动拒绝 ask，并让整轮直接停止。
+//     所以每一项都写成 allow 或 deny。
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // 只加载这三家
+  "enabled_providers": ["deepseek", "moonshotai-cn", "xiaomi"],
+
+  // 不自动升级、不分享会话、不做快照、不下载语言服务器和格式化工具
+  "autoupdate": false,
+  "share": "disabled",
+  "snapshot": false,
+  "lsp": false,
+  "formatter": false,
+  "default_agent": "worker",
+
+  "provider": {
+    // DeepSeek：v4-pro 质量高，flash 便宜快；nothink 变体用于关闭思考
+    "deepseek": {
+      "options": { "baseURL": "https://api.deepseek.com", "apiKey": "{env:DEEPSEEK_API_KEY}" },
+      "whitelist": ["deepseek-v4-pro", "deepseek-flash"],
+      "models": {
+        "deepseek-v4-pro": { "variants": { "nothink": { "thinking": { "type": "disabled" } } } },
+        "deepseek-flash":  { "variants": { "nothink": { "thinking": { "type": "disabled" } } } }
+      }
+    },
+    // Kimi（Moonshot 开放平台，国内）：k3 综合强，k2.7-code 偏编程（只能开思考）
+    "moonshotai-cn": {
+      "options": { "baseURL": "https://api.moonshot.cn/v1", "apiKey": "{env:KIMI_CN_API_KEY}" },
+      "whitelist": ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"]
+    },
+    // 小米 MiMo：内置的 low/medium/high 会发 MiMo 可能不认的参数，所以禁掉，改用 think / nothink
+    "xiaomi": {
+      "options": { "baseURL": "https://api.xiaomimimo.com/v1", "apiKey": "{env:XIAOMI_API_KEY}" },
+      "whitelist": ["mimo-v2.6-pro", "mimo-v2.6-flash"],
+      "models": {
+        "mimo-v2.6-pro": { "variants": {
+          "low": { "disabled": true }, "medium": { "disabled": true }, "high": { "disabled": true },
+          "think":   { "thinking": { "type": "enabled" } },
+          "nothink": { "thinking": { "type": "disabled" } } } },
+        "mimo-v2.6-flash": { "variants": {
+          "low": { "disabled": true }, "medium": { "disabled": true }, "high": { "disabled": true },
+          "think":   { "thinking": { "type": "enabled" } },
+          "nothink": { "thinking": { "type": "disabled" } } } }
+      }
+    }
+  },
+
+  // 权限：全部写成 allow / deny。真正的硬隔离靠执行脚本外面套的 macOS 沙箱，这里是第二道防线
+  "permission": {
+    "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny", "*.env.example": "allow" },
+    "edit": "allow", "glob": "allow", "grep": "allow", "list": "allow", "todowrite": "allow",
+    "bash": { "*": "allow",
+              "sudo *": "deny", "git push*": "deny", "git commit*": "deny", "brew *": "deny",
+              "npm install -g*": "deny", "npm i -g*": "deny", "pip install*": "deny", "pip3 install*": "deny",
+              "launchctl *": "deny", "defaults write*": "deny", "osascript *": "deny",
+              "env": "deny", "printenv*": "deny", "curl *": "deny", "wget *": "deny", "nc *": "deny" },
+    "external_directory": { "*": "deny" },
+    "webfetch": "deny", "websearch": "deny", "task": "deny", "skill": "deny", "lsp": "deny",
+    "doom_loop": "deny", "question": "deny"
+  },
+
+  // 执行者 agent：最多 40 步，防止无限循环
+  "agent": {
+    "worker": { "description": "frclyo headless worker", "mode": "primary", "steps": 40 }
+  }
+}

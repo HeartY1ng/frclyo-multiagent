@@ -1,0 +1,4 @@
+#!/bin/bash
+# 隔离 Python 用户环境，只从本入口相邻目录加载公共库。
+BIN_DIR=$(cd "$(dirname "$0")" && pwd -P) || exit 2
+exec python3 -I -c 'import sys; sys.path.insert(0, sys.argv.pop(1)); from frclyo.ledger import main; sys.exit(main())' "$BIN_DIR" "$@"

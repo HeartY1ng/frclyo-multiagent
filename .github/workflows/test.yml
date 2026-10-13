@@ -1,0 +1,23 @@
+name: offline-tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      # 禁止接触真实 launchd；不需要 key，不跑 live/demo 真模型。
+      - name: Run all offline tests
+        env:
+          FRCLYO_LAUNCHD_DRY_RUN: '1'
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -B tests/run_all.py

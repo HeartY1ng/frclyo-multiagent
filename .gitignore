@@ -1,0 +1,32 @@
+# Python 与系统缓存
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# 凭据与个人配置
+.env
+.env.*
+!.env.example
+.frclyo/
+
+# 本地工作目录与运行产物（演示输入文件仍受版本控制）
+/AgentWork/
+/交付/
+/任务卡/
+/.runtime/
+/账本.jsonl
+/表现记录.jsonl
+/.账本.lock/
+/.账本.guard
+/demo-results/
+/路由建议.md
+/自检报告.md
+/board/运行日志.txt
+/board/board-test-*/
+/.aw-test-*/
+/.calibrate-test-*/
+*.log
+# 中断测试可能遗留的临时目录
+/bin/ledger-test-*/
+/bin/codex-worker-test-*/
+/.offline-tests-*/
